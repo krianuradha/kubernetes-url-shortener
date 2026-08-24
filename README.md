@@ -103,6 +103,131 @@ curl http://$(minikube ip):30080/
 
 ---
 
+## API Test Cases
+
+All tests run against `http://localhost:8080` (via `kubectl port-forward svc/url-shortener 8080:80`).
+
+### ✅ Test 1 — Health Check
+```bash
+curl http://localhost:8080/
+```
+**Output:**
+```json
+{"message":"URL Shortener v2 🚀","version":"2.0.0"}
+```
+
+---
+
+### ✅ Test 2 — Shorten a URL
+```bash
+curl -X POST http://localhost:8080/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://google.com"}'
+```
+**Output:**
+```json
+{"shortId":"36b77a","shortUrl":"/36b77a","originalUrl":"https://google.com"}
+```
+
+---
+
+### ✅ Test 3 — Shorten another URL
+```bash
+curl -X POST http://localhost:8080/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://youtube.com"}'
+```
+**Output:**
+```json
+{"shortId":"87ae28","shortUrl":"/87ae28","originalUrl":"https://youtube.com"}
+```
+
+---
+
+### ✅ Test 4 — Use the short URL (redirect)
+```bash
+curl -si http://localhost:8080/36b77a | head -5
+```
+**Output:**
+```
+HTTP/1.1 302 Found
+X-Powered-By: Express
+Location: https://google.com
+Vary: Accept
+Content-Type: text/plain; charset=utf-8
+```
+
+---
+
+### ✅ Test 5 — Follow the redirect
+```bash
+curl -L http://localhost:8080/36b77a
+```
+**Output:** Google's homepage HTML (redirected successfully)
+
+---
+
+### ✅ Test 6 — 404 for unknown short code
+```bash
+curl http://localhost:8080/doesntexist
+```
+**Output:**
+```json
+{"error":"Short URL \"/doesntexist\" not found. It may have never existed, or the app restarted."}
+```
+
+---
+
+### ✅ Test 7 — 400 for missing URL in body
+```bash
+curl -X POST http://localhost:8080/shorten \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+**Output:**
+```json
+{"error":"Please provide a \"url\" field in the request body"}
+```
+
+---
+
+### ✅ Test 8 — 400 for invalid URL format
+```bash
+curl -X POST http://localhost:8080/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"url": "not-a-real-url"}'
+```
+**Output:**
+```json
+{"error":"Invalid URL. Make sure it starts with http:// or https://"}
+```
+
+---
+
+### ✅ Test 9 — Self-Healing (Kubernetes demo)
+```bash
+# Delete a running pod
+kubectl delete pod <pod-name>
+
+# App still responds — other pods handle traffic
+curl http://localhost:8080/
+
+# Kubernetes already created a replacement pod
+kubectl get pods
+```
+**Expected:** Always 3 pods in `Running` state, even after deleting one.
+
+---
+
+### ✅ Test 10 — Scale up
+```bash
+kubectl scale deployment url-shortener --replicas=3
+kubectl get pods
+```
+**Expected:** 3 pods all showing `1/1 Running`
+
+---
+
 ## Kubernetes Commands Reference
 
 ```bash
