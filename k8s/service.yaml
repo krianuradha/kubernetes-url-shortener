@@ -1,0 +1,40 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# service.yaml
+#
+# A Service gives you a STABLE way to reach your Pods.
+#
+# Problem it solves:
+#   Pods are temporary. They get deleted and recreated with new IP addresses.
+#   A Service acts as a permanent front door that always routes to healthy Pods.
+#
+# Think of it as a receptionist: clients call the receptionist (Service),
+# and the receptionist connects them to an available employee (Pod).
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: url-shortener      # Name of this Service
+
+spec:
+  # type: NodePort exposes the Service on a port on your local machine (the Node).
+  # This is the simplest way to access a Service from outside Kubernetes locally.
+  # (In production on a cloud, you'd use LoadBalancer or an Ingress instead.)
+  type: NodePort
+
+  # selector: which Pods should this Service send traffic to?
+  # It finds Pods with the label: app=url-shortener
+  # This MUST match the labels in deployment.yaml → spec.template.metadata.labels
+  selector:
+    app: url-shortener
+
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80            # The port the Service listens on INSIDE the cluster
+      targetPort: 3000    # The port on the Pod to forward traffic to (our Express app)
+      nodePort: 30080     # The port exposed on your LOCAL machine (you'll use this to test)
+                          # Valid range: 30000–32767
+                          # Access via: http://localhost:30080  (Docker Desktop)
+                          # OR:         http://$(minikube ip):30080  (Minikube)

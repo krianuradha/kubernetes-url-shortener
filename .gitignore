@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Environment variables — NEVER commit these
+.env
+.env.*
+.env.local
+.env.production
+*.env
+
+# macOS junk
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker build cache
+.dockerignore
+
+# Editor folders
+.vscode/
+.idea/
+
+# Kubernetes secrets (if you ever add them)
+k8s/secret.yaml
+k8s/*-secret.yaml

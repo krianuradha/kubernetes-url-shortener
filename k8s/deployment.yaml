@@ -1,0 +1,65 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# deployment.yaml
+#
+# A Deployment tells Kubernetes:
+#   "Keep N copies (replicas) of this container running at all times.
+#    If one crashes, start a new one automatically."
+#
+# Think of it as a babysitter for your Pods.
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: apps/v1        # Which Kubernetes API group handles Deployments
+kind: Deployment           # The type of Kubernetes resource we are creating
+
+metadata:
+  name: url-shortener      # The name of this Deployment (used in kubectl commands)
+
+spec:
+  replicas: 1              # Start with 1 Pod. We'll scale this to 3 on Day 3.
+
+  # selector tells the Deployment WHICH Pods to manage.
+  # It finds Pods that have the label: app=url-shortener
+  selector:
+    matchLabels:
+      app: url-shortener
+
+  # template describes the Pod that will be created
+  template:
+    metadata:
+      labels:
+        app: url-shortener   # This label MUST match the selector above
+
+    spec:
+      containers:
+        - name: url-shortener                  # Name of the container inside the Pod
+          image: url-shortener:v1              # The Docker image to use (built locally)
+          imagePullPolicy: Never               # IMPORTANT: use the LOCAL image, don't try to pull from Docker Hub
+          ports:
+            - containerPort: 3000              # The port our Express app listens on
+
+          # Resource limits keep the Pod from eating all your laptop's memory/CPU
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "250m"
+
+          # Readiness probe: Kubernetes only sends traffic to a Pod
+          # AFTER this check passes. It hits GET / and expects HTTP 200.
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          # Liveness probe: If this fails, Kubernetes RESTARTS the Pod.
+          # This is how Kubernetes detects a hung/broken application.
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 15
